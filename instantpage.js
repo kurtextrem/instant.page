@@ -1,236 +1,177 @@
-/*! instant.page v5.0.1 - (C) 2019-2020 Alexandre Dieulot - https://instant.page/license */
+/*!instant.page5-(c)2019 Alexandre Dieulot;https://instant.page/license;modified by Jacob Gross*/
 
-let mouseoverTimer
-let lastTouchTimestamp
-const prefetches = new Set()
-const prefetchElement = document.createElement('link')
-const isSupported = prefetchElement.relList && prefetchElement.relList.supports && prefetchElement.relList.supports('prefetch')
-                    && window.IntersectionObserver && 'isIntersecting' in IntersectionObserverEntry.prototype
-const allowQueryString = 'instantAllowQueryString' in document.body.dataset
-const allowExternalLinks = 'instantAllowExternalLinks' in document.body.dataset
-const useWhitelist = 'instantWhitelist' in document.body.dataset
-const mousedownShortcut = !('instantNoMousedownShortcut' in document.body.dataset)
-const DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111
+;(function (document, location) {
+	'use strict'
 
-let delayOnHover = 65
-let useMousedown = false
-let useMousedownOnly = false
-let useViewport = false
+	let urlToPreload = ''
+	let mouseoverTimer = 0
+	let lastTouchTimestamp = 0
 
-if ('instantIntensity' in document.body.dataset) {
-  const intensity = document.body.dataset.instantIntensity
+	const prefetcher = document.createElement('link')
+	let relList = prefetcher.relList
+	const supports = relList !== undefined && relList.supports !== undefined
+	const isPrerenderSupported = supports && relList.supports('prerender')
+	const DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111
+	const HOVER_DELAY = 65
+	const HOVER_PRERENDER_DELAY = 75 // pre-render 10ms later to save resources.
 
-  if (intensity.substr(0, 'mousedown'.length) == 'mousedown') {
-    useMousedown = true
-    if (intensity == 'mousedown-only') {
-      useMousedownOnly = true
-    }
-  }
-  else if (intensity.substr(0, 'viewport'.length) == 'viewport') {
-    if (!(navigator.connection && (navigator.connection.saveData || (navigator.connection.effectiveType && navigator.connection.effectiveType.includes('2g'))))) {
-      if (intensity == "viewport") {
-        /* Biggest iPhone resolution (which we want): 414 × 896 = 370944
-         * Small 7" tablet resolution (which we don’t want): 600 × 1024 = 614400
-         * Note that the viewport (which we check here) is smaller than the resolution due to the UI’s chrome */
-        if (document.documentElement.clientWidth * document.documentElement.clientHeight < 450000) {
-          useViewport = true
-        }
-      }
-      else if (intensity == "viewport-all") {
-        useViewport = true
-      }
-    }
-  }
-  else {
-    const milliseconds = parseInt(intensity)
-    if (!isNaN(milliseconds)) {
-      delayOnHover = milliseconds
-    }
-  }
-}
+	let dataset = document.body.dataset
+	const mousedownShortcut = !('instantNoMousedownShortcut' in document.body.dataset)
+	const allowQueryString = 'instantAllowQueryString' in dataset
+	const allowExternalLinks = 'instantAllowExternalLinks' in dataset
+	const saveData = navigator.connection !== undefined && navigator.connection.saveData
 
-if (isSupported) {
-  const eventListenersOptions = {
-    capture: true,
-    passive: true,
-  }
+	document.head.appendChild(prefetcher)
 
-  if (!useMousedownOnly) {
-    document.addEventListener('touchstart', touchstartListener, eventListenersOptions)
-  }
+	let eventListenersOptions = {
+		capture: true,
+		passive: true,
+	}
+	document.addEventListener('touchstart', touchstartListener, eventListenersOptions)
+	document.addEventListener('mouseover', mouseoverListener, eventListenersOptions)
+	if (mousedownShortcut) {
+		document.addEventListener('mousedown', mousedownShortcutListener, eventListenersOptions)
+	}
 
-  if (!useMousedown) {
-    document.addEventListener('mouseover', mouseoverListener, eventListenersOptions)
-  }
-  else if (!mousedownShortcut) {
-      document.addEventListener('mousedown', mousedownListener, eventListenersOptions)
-  }
+	dataset = relList = eventListenersOptions = null // GC
 
-  if (mousedownShortcut) {
-    document.addEventListener('mousedown', mousedownShortcutListener, eventListenersOptions)
-  }
+	/**
+	 * @param {{ target: { closest: (arg0: string) => any; }; }} event
+	 */
+	function touchstartListener(event) {
+		if (!('closest' in event.target)) return // Safari 13.0.5 on iOS 13.3.1 on iPhone
 
-  if (useViewport) {
-    let triggeringFunction
-    if (window.requestIdleCallback) {
-      triggeringFunction = (callback) => {
-        requestIdleCallback(callback, {
-          timeout: 1500,
-        })
-      }
-    }
-    else {
-      triggeringFunction = (callback) => {
-        callback()
-      }
-    }
+		const passive = { passive: true }
 
-    triggeringFunction(() => {
-      const intersectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const linkElement = entry.target
-            intersectionObserver.unobserve(linkElement)
-            preload(linkElement.href)
-          }
-        })
-      })
+		/* Chrome on Android calls mouseover before touchcancel so `lastTouchTimestamp`
+		 * must be assigned on touchstart to be measured on mouseover. */
+		lastTouchTimestamp = Date.now()
 
-      document.querySelectorAll('a').forEach((linkElement) => {
-        if (isPreloadable(linkElement)) {
-          intersectionObserver.observe(linkElement)
-        }
-      })
-    })
-  }
-}
+		const linkElement = event.target.closest('a')
 
-function touchstartListener(event) {
-  /* Chrome on Android calls mouseover before touchcancel so `lastTouchTimestamp`
-   * must be assigned on touchstart to be measured on mouseover. */
-  lastTouchTimestamp = performance.now()
+		if (!isPreloadable(linkElement)) return
 
-  const linkElement = event.target.closest('a')
+		linkElement.addEventListener('touchcancel', touchendAndTouchcancelListener, passive)
+		linkElement.addEventListener('touchend', touchendAndTouchcancelListener, passive)
 
-  if (!isPreloadable(linkElement)) {
-    return
-  }
+		urlToPreload = linkElement.href
+		preload(linkElement.href)
+	}
 
-  preload(linkElement.href)
-}
+	function touchendAndTouchcancelListener() {
+		urlToPreload = ''
+		stopPreloading()
+	}
 
-function mouseoverListener(event) {
-  if (performance.now() - lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) {
-    return
-  }
+	/**
+	 * @param {{ target: { closest: (arg0: string) => any; }; }} event
+	 */
+	function mouseoverListener(event) {
+		if (!('closest' in event.target)) return // Safari 13.0.5 on iOS 13.3.1 on iPhone
+		if (Date.now() - lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) return
 
-  const linkElement = event.target.closest('a')
+		const linkElement = event.target.closest('a')
 
-  if (!isPreloadable(linkElement)) {
-    return
-  }
+		if (!isPreloadable(linkElement)) return
 
-  linkElement.addEventListener('mouseout', mouseoutListener, {passive: true})
+		linkElement.addEventListener('mouseout', mouseoutListener, {
+			passive: true,
+		})
 
-  mouseoverTimer = setTimeout(() => {
-    preload(linkElement.href)
-    mouseoverTimer = undefined
-  }, delayOnHover)
-}
+		urlToPreload = linkElement.href
 
-function mousedownListener(event) {
-  const linkElement = event.target.closest('a')
+		mouseoverTimer = setTimeout(
+			function () {
+				if (isPrerenderSupported) prerender(linkElement.getAttribute('href'))
+				else preload(linkElement.getAttribute('href'))
+				mouseoverTimer = 0
+			},
+			isPrerenderSupported || saveData ? HOVER_PRERENDER_DELAY : HOVER_DELAY
+		)
+	}
 
-  if (!isPreloadable(linkElement)) {
-    return
-  }
+	/**
+	 * @param {{ relatedTarget: { closest: (arg0: string) => any; }; target: { closest: (arg0: string) => any; }; }} event
+	 */
+	function mouseoutListener(event) {
+		if (event.relatedTarget && (!('closest' in event.target) || event.target.closest('a') === event.relatedTarget.closest('a'))) return
 
-  preload(linkElement.href)
-}
+		if (mouseoverTimer) {
+			clearTimeout(mouseoverTimer)
+			mouseoverTimer = 0
+			return
+		}
 
-function mouseoutListener(event) {
-  if (event.relatedTarget && event.target.closest('a') == event.relatedTarget.closest('a')) {
-    return
-  }
+		urlToPreload = ''
+		stopPreloading()
+	}
 
-  if (mouseoverTimer) {
-    clearTimeout(mouseoverTimer)
-    mouseoverTimer = undefined
-  }
-}
+	/**
+	 * @param {{ which: number; metaKey: any; ctrlKey: any; target: { closest: (arg0: string) => any; }; }} event
+	 */
+	function mousedownShortcutListener(event) {
+		if (Date.now() - lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) return
 
-function mousedownShortcutListener(event) {
-  if (performance.now() - lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) {
-    return
-  }
+		if (event.which > 1 || event.metaKey || event.ctrlKey) return
 
-  const linkElement = event.target.closest('a')
+		const linkElement = event.target.closest('a')
+		if (linkElement === null || 'noInstant' in linkElement.dataset || linkElement.getAttribute('download') !== null) return
 
-  if (event.which > 1 || event.metaKey || event.ctrlKey) {
-    return
-  }
+		linkElement.addEventListener(
+			'click',
+			function (/** @type {{ detail: number; preventDefault: () => void; }} */ ev) {
+				if (ev.detail === 1337) return
+				ev.preventDefault()
+			},
+			{ capture: true, once: true }
+		)
 
-  if (!linkElement) {
-    return
-  }
+		const customEvent = new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1337, view: window })
+		linkElement.dispatchEvent(customEvent)
+	}
 
-  linkElement.addEventListener('click', function (event) {
-    if (event.detail == 1337) {
-      return
-    }
+	/**
+	 * @param {{ href: any; dataset: any; } | null} linkElement
+	 */
+	function isPreloadable(linkElement) {
+		let href
+		if (linkElement === null || !(href = linkElement.href)) return false
 
-    event.preventDefault()
-  }, {capture: true, passive: false, once: true})
+		if (urlToPreload === href || href.charCodeAt(0) === 35 /* # */) return false
 
-  const customEvent = new MouseEvent('click', {view: window, bubbles: true, cancelable: false, detail: 1337})
-  linkElement.dispatchEvent(customEvent)
-}
+		const preloadLocation = new URL(href)
 
-function isPreloadable(linkElement) {
-  if (!linkElement || !linkElement.href) {
-    return
-  }
+		if (!allowExternalLinks && preloadLocation.origin !== location.origin && !('instant' in linkElement.dataset)) return false
 
-  if (useWhitelist && !('instant' in linkElement.dataset)) {
-    return
-  }
+		if (preloadLocation.protocol !== 'http:' && preloadLocation.protocol !== 'https:') return false
+		if (preloadLocation.protocol === 'http:' && location.protocol === 'https:') return false
+		if (!allowQueryString && preloadLocation.search && !('instant' in linkElement.dataset)) return false
+		if (preloadLocation.hash && preloadLocation.pathname + preloadLocation.search === location.pathname + location.search) return false
+		if ('noInstant' in linkElement.dataset) return false
 
-  if (!allowExternalLinks && linkElement.origin != location.origin && !('instant' in linkElement.dataset)) {
-    return
-  }
+		return true
+	}
 
-  if (!['http:', 'https:'].includes(linkElement.protocol)) {
-    return
-  }
+	/**
+	 * @param {string} url
+	 */
+	function preload(url) {
+		//console.log('preload', url)
+		prefetcher.rel = 'prefetch'
+		prefetcher.href = url
+	}
 
-  if (linkElement.protocol == 'http:' && location.protocol == 'https:') {
-    return
-  }
+	/**
+	 * @param {string} url
+	 */
+	function prerender(url) {
+		//console.log('prerender', url)
+		prefetcher.rel = 'prerender'
+		prefetcher.href = url
+	}
 
-  if (!allowQueryString && linkElement.search && !('instant' in linkElement.dataset)) {
-    return
-  }
-
-  if (linkElement.hash && linkElement.pathname + linkElement.search == location.pathname + location.search) {
-    return
-  }
-
-  if ('noInstant' in linkElement.dataset) {
-    return
-  }
-
-  return true
-}
-
-function preload(url) {
-  if (prefetches.has(url)) {
-    return
-  }
-
-  const prefetcher = document.createElement('link')
-  prefetcher.rel = 'prefetch'
-  prefetcher.href = url
-  document.head.appendChild(prefetcher)
-
-  prefetches.add(url)
-}
+	function stopPreloading() {
+		prefetcher.rel = '' // so we don't trigger an empty prerender
+		prefetcher.removeAttribute('href') // might not cancel, if this isn't removed
+	}
+})(document, location)
