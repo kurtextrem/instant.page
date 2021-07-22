@@ -4,33 +4,34 @@
 <title>instant.page test</title>
 <style>
 body {
-  background: lightskyblue;
+  padding-bottom: 100vh;
   overflow-y: scroll;
   font-family: system-ui, sans-serif;
+  background: lightskyblue;
 }
 
 a {
   display: block;
-  background: hsla(0, 0%, 100%, .25);
-  padding: .5em;
-  margin: .5em 0;
-  border: 3px solid hsla(0, 0%, 100%, .25);
-  text-decoration: none;
+  margin: 0.5em 0;
+  padding: 0.5em;
   color: #008;
   font-size: 1.5em;
+  text-decoration: none;
+  background: hsla(0, 0%, 100%, 0.25);
+  border: 3px solid hsla(0, 0%, 100%, 0.25);
 }
 
-a:hover {
+a:hover, a:focus {
   border-color: hsla(0, 0%, 100%, 1);
 }
 
 a:active {
-  background: hsla(0, 0%, 0%, .25);
+  background: hsla(0, 0%, 0%, 0.25);
 }
 
 form {
-  background: hsla(0, 0%, 100%, .25);
-  border: 1px solid hsla(0, 0%, 0%, .15);
+  background: hsla(0, 0%, 100%, 0.25);
+  border: 1px solid hsla(0, 0%, 0%, 0.15);
 }
 
 form label {
@@ -45,11 +46,11 @@ form label {
   }
 }
 
-form input[type="number"] {
+form input[type='number'] {
   width: 50px;
 }
 
-form input[type="text"] {
+form input[type='text'] {
   width: 110px;
 }
 </style>

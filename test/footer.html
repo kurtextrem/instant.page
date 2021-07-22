@@ -19,6 +19,28 @@ button.addEventListener('click', () => {
   button.innerText = '>>> ' + (+new Date - start) + ' <<<'
   start = undefined
 })
+
+document.querySelectorAll('a').forEach(el => {
+  el.addEventListener('click', e => e.preventDefault())
+  registerDebugs(el)
+})
+
+window.addEventListener('scroll', e => {
+  console.log('scroll', e)
+})
+
+function registerDebugs(elem) {
+  elem.addEventListener('touchstart', e => console.log('touchstart', e))
+  elem.addEventListener('touchend', e => console.log('touchend', e))
+  elem.addEventListener('touchcancel', e => console.log('touchcancel', e))
+  elem.addEventListener('mouseover', e => console.log('mouseover', e))
+  elem.addEventListener('mouseout', e => console.log('mouseout', e))
+  elem.addEventListener('mousedown', e => console.log('mousedown', e))
+  elem.addEventListener('mouseup', e => console.log('mouseup', e))
+  elem.addEventListener('click', e => console.log('click', e))
+  elem.addEventListener('focus', e => console.log('focus', e))
+  elem.addEventListener('blur', e => console.log('blur', e))
+}
 </script>
 <script type="module">
 const form = document.forms[0]
