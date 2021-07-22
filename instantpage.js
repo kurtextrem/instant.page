@@ -135,7 +135,7 @@
 	}
 
 	function mouseoverTimeout(linkElement, important) {
-		if (isPrerenderSupported && isMobile) prerender(linkElement.href)
+		if (isPrerenderSupported && isMobile) prerender(linkElement.href, important)
 		else preload(linkElement.href, important, !(isMobile && (saveData || has3G))) // on mobile we want to cancel requests when data saver is enabled or user has slow connection
 		mouseoverTimer = undefined
 	}
@@ -187,7 +187,7 @@
 		const linkElement = event.target.closest('a')
 		if (!isPreloadable(linkElement, true)) return
 
-		prerender(linkElement.href)
+		prerender(linkElement.href, true)
 	}
 
 	/**
@@ -238,17 +238,19 @@
 
 	/**
 	 * @param {string} url
+	 * @param important
 	 */
-	function prerender(url) {
+	function prerender(url, important) {
 		console.log('prerender', url)
-		prefetcher.rel = 'prerender'
+		prefetcher.rel = 'prerender prefetch' // trigger both at the same time
 		prefetcher.href = url
+		if (important) prefetcher.setAttribute('importance', 'high')
 
 		// https://docs.google.com/document/d/1P2VKCLpmnNm_cRAjUeE-bqLL0bslL_zKqiNeCzNom_w/edit
 		if (isMobile) {
 			if (!speculationTag) {
 				speculationTag = document.createElement('script')
-				speculationTag.src = 'speculationrules'
+				speculationTag.type = 'speculationrules'
 				document.head.appendChild(speculationTag)
 			}
 
@@ -280,5 +282,7 @@
 	function stopPreloading() {
 		prefetcher.removeAttribute('rel') // so we don't trigger an empty prerender
 		prefetcher.removeAttribute('href') // might not cancel, if this isn't removed
+		prefetcher.removeAttribute('importance')
+		// speculationTag.textContent = '' // not sure if this works
 	}
 })(document, location)
