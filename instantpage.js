@@ -17,7 +17,7 @@
 	let relList = prefetcher.relList
 	const supports = relList !== undefined && relList.supports !== undefined // need this check, as Edge < 17, Safari < 10.1, Safari Mobile < 10.3 don't support this
 	const isPrerenderSupported = supports && relList.supports('prerender')
-	const preload = !supports || relList.supports('prefetch') ? _prefetch : relList.supports('preload') ? _preload : function () {} // Safari (11.1, mobile 11.3) only supports preload; for other browser we prefer prefetch over preload
+	const preload = !supports || relList.supports('prefetch') ? _prefetch : relList.supports('preload') ? _preload : () => {} // Safari (11.1, mobile 11.3) only supports preload; for other browser we prefer prefetch over preload
 
 	const connection = navigator.connection
 	const has3G = connection !== undefined && connection.effectiveType.includes('3g')
@@ -169,7 +169,7 @@
 
 		linkElement.addEventListener(
 			'click',
-			function (/** @type {{ detail: number; preventDefault: () => void; }} */ ev) {
+			ev => {
 				if (ev.detail === 1337) return
 				ev.preventDefault()
 			},
