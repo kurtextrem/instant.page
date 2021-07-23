@@ -7,9 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "minify": "terser ./instantpage.js --compress drop_console=true --mangle --toplevel --comments \"/^!/\" --output ./dist/instantpage.min.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npm run minify"
+    "minify": "terser instantpage.js --compress drop_console=true --mangle --toplevel --comments \"/^!/\" --output dist/instantpage.min.js",
+    "build": "rm -r -f dist && mkdir dist && npm run minify",
+    "lint": "exit 0"
   },
   "repository": {
     "type": "git",
