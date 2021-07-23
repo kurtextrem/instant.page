@@ -1,14 +1,15 @@
 {
   "name": "instant.page",
-  "version": "5.0.1",
-  "description": "Make your site’s pages instant in 1 minute and improve your conversion rate by 1%",
-  "main": "instantpage.js",
+  "version": "5.1.0.1",
+  "description": "Make your site's pages instant in 1 minute and improve your conversion rate by 1%",
+  "main": "dist/instantpage.min.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "minify": "uglifyjs ./instantpage.js --compress --mangle --toplevel --comments \"/^!/\" --output ./instantpage.min.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "minify": "terser ./instantpage.js --compress drop_console=true --mangle --toplevel --comments \"/^!/\" --output ./dist/instantpage.min.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npm run minify"
   },
   "repository": {
     "type": "git",
@@ -18,10 +19,10 @@
     "instant",
     "performance"
   ],
-  "author": "Alexandre Dieulot",
+  "author": "Alexandre Dieulot, Jacob Gross",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/instantpage/instant.page/issues"
+    "url": "https://github.com/kurtextrem/instant.page/issues"
   },
   "homepage": "https://instant.page/"
 }
