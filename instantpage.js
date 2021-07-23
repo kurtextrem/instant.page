@@ -7,6 +7,8 @@
 	if (!('closest' in prefetcher) || !('Set' in window)) return
 	// min browsers: Edge 15, Firefox 54, Chrome 51, Safari 10, Opera 38, Safari Mobile 10
 
+	document.head.appendChild(prefetcher)
+
 	const preloadedUrls = new Set()
 	let mouseoverTimer = 0
 	let lastTouchTimestamp = 0
@@ -16,19 +18,14 @@
 	const isPrerenderSupported = supports && relList.supports('prerender')
 	const preload = !supports || relList.supports('prefetch') ? _prefetch : relList.supports('preload') ? _preload : function () {} // Safari (11.1, mobile 11.3) only supports preload; for other browser we prefer prefetch over preload
 
-	const DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111
+	const connection = navigator.connection
+	const has3G = connection !== undefined && connection.effectiveType.includes('3g')
+	const saveData = connection !== undefined && (connection.saveData || connection.effectiveType.includes('2g'))
 
 	let dataset = document.body.dataset
 	const mousedownShortcut = 'instantMousedown' in dataset
 	const allowQueryString = 'instantAllowQueryString' in dataset
 	const allowExternalLinks = 'instantAllowExternalLinks' in dataset
-	const connection = navigator.connection
-	const has3G = connection !== undefined && connection.effectiveType.includes('3g')
-	const saveData = connection !== undefined && (connection.saveData || connection.effectiveType.includes('2g'))
-
-	document.head.appendChild(prefetcher)
-
-	const HOVER_DELAY = 'instantIntensity' in dataset ? +dataset.instantIntensity : 65
 	const useViewport =
 		!saveData &&
 		'instantViewport' in dataset &&
@@ -36,7 +33,9 @@
 		 * Small 7" tablet resolution (which we don't want): 600 * 1024 = 614400
 		 * Note that the viewport (which we check here) is smaller than the resolution due to the UI's chrome */
 		('instantViewportMobile' in dataset || document.documentElement.clientWidth * document.documentElement.clientHeight > 450000)
-	const PREFETCH_LIMIT = !has3G ? ('instantAllowExternalLinks' in dataset ? +dataset.instantLimit : 1 / 0) : 1 // Infinity
+
+	const DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111
+	const HOVER_DELAY = 'instantIntensity' in dataset ? +dataset.instantIntensity : 65
 
 	document.addEventListener('touchstart', touchstartListener, { capture: true, passive: true })
 	document.addEventListener('mouseover', mouseoverListener, { capture: true })
@@ -46,6 +45,7 @@
 
 	if (useViewport && window.IntersectionObserver && 'isIntersecting' in IntersectionObserverEntry.prototype) {
 		// https://www.andreaverlicchi.eu/quicklink-optimal-options/
+		const PREFETCH_LIMIT = !has3G ? ('instantAllowExternalLinks' in dataset ? +dataset.instantLimit : 1 / 0) : 1 // Infinity
 		const SCROLL_DELAY = 'instantScrollDelay' in dataset ? +dataset.instantScrollDelay : 500
 		const THRESHOLD = 0.75
 
