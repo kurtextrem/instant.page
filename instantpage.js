@@ -1,13 +1,14 @@
 /*!instant.page5.1-(c)2019 Alexandre Dieulot;https://instant.page/license;modified by Jacob Gross*/
 
-;(function (document, location) {
+;(function (document, location, Date) {
 	'use strict'
 
 	const prefetcher = document.createElement('link')
 	if (!('closest' in prefetcher) || !('Set' in window)) return
 	// min browsers: Edge 15, Firefox 54, Chrome 51, Safari 10, Opera 38, Safari Mobile 10
 
-	document.head.appendChild(prefetcher)
+	const head = document.head
+	head.appendChild(prefetcher)
 
 	const preloadedUrls = new Set()
 	let mouseoverTimer = 0
@@ -225,7 +226,7 @@
 		let fetcher = prefetcher
 		if (newTag) {
 			fetcher = document.createElement('link')
-			document.head.appendChild(fetcher)
+			head.appendChild(fetcher)
 		}
 
 		fetcher.rel = 'prefetch'
@@ -250,7 +251,7 @@
 			if (!speculationTag) {
 				speculationTag = document.createElement('script')
 				speculationTag.type = 'speculationrules'
-				document.head.appendChild(speculationTag)
+				head.appendChild(speculationTag)
 			}
 
 			const obj = { prerender: [{ source: 'list', urls: [url] }] }
@@ -270,7 +271,7 @@
 		let fetcher = prefetcher
 		if (newTag) {
 			fetcher = document.createElement('link')
-			document.head.appendChild(fetcher)
+			head.appendChild(fetcher)
 		}
 
 		prefetcher.rel = 'preload'
@@ -284,4 +285,4 @@
 		prefetcher.removeAttribute('importance')
 		// speculationTag.textContent = '' // not sure if this works
 	}
-})(document, location)
+})(document, location, Date)
