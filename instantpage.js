@@ -3,17 +3,18 @@
 ;(function (document, location) {
 	'use strict'
 
-	const preloadedUrls = []
+	const prefetcher = document.createElement('link')
+	if (!('closest' in prefetcher) || !('Set' in window)) return
+	// min browsers: Edge 15, Firefox 54, Chrome 51, Safari 10, Opera 38, Safari Mobile 10
+
+	const preloadedUrls = new Set()
 	let mouseoverTimer = 0
 	let lastTouchTimestamp = 0
 
-	const prefetcher = document.createElement('link')
-	if (!('closest' in prefetcher)) return // Safari 13.0.5 on iOS 13.3.1 on iPhone
-
 	let relList = prefetcher.relList
-	const supports = relList !== undefined && relList.supports !== undefined
+	const supports = relList !== undefined && relList.supports !== undefined // need this check, as Edge < 17, Safari < 10.1, Safari Mobile < 10.3 don't support this
 	const isPrerenderSupported = supports && relList.supports('prerender')
-	const preload = supports && relList.supports('prefetch') ? _prefetch : _preload // Safari only supports preload
+	const preload = !supports || relList.supports('prefetch') ? _prefetch : relList.supports('preload') ? _preload : function () {} // Safari (11.1, mobile 11.3) only supports preload; for other browser we prefer prefetch over preload
 
 	const DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111
 
@@ -21,9 +22,9 @@
 	const mousedownShortcut = 'instantMousedown' in dataset
 	const allowQueryString = 'instantAllowQueryString' in dataset
 	const allowExternalLinks = 'instantAllowExternalLinks' in dataset
-	const has3G = navigator.connection !== undefined && navigator.connection.effectiveType.includes('3g')
-	const saveData =
-		navigator.connection !== undefined && (navigator.connection.saveData || navigator.connection.effectiveType.includes('2g'))
+	const connection = navigator.connection
+	const has3G = connection !== undefined && connection.effectiveType.includes('3g')
+	const saveData = connection !== undefined && (connection.saveData || connection.effectiveType.includes('2g'))
 
 	document.head.appendChild(prefetcher)
 
@@ -31,9 +32,9 @@
 	const useViewport =
 		!saveData &&
 		'instantViewport' in dataset &&
-		/* Biggest iPhone resolution (which we want): 414 × 896 = 370944
-		 * Small 7" tablet resolution (which we don’t want): 600 × 1024 = 614400
-		 * Note that the viewport (which we check here) is smaller than the resolution due to the UI’s chrome */
+		/* Biggest iPhone resolution (which we want): 414 * 896 = 370944
+		 * Small 7" tablet resolution (which we don't want): 600 * 1024 = 614400
+		 * Note that the viewport (which we check here) is smaller than the resolution due to the UI's chrome */
 		('instantViewportMobile' in dataset || document.documentElement.clientWidth * document.documentElement.clientHeight > 450000)
 	const PREFETCH_LIMIT = !has3G ? ('instantAllowExternalLinks' in dataset ? +dataset.instantLimit : 1 / 0) : 1 // Infinity
 
@@ -43,7 +44,6 @@
 	if (mousedownShortcut) document.addEventListener('mousedown', mousedownShortcutListener, { capture: true })
 	if (isPrerenderSupported) document.addEventListener('mousedown', mousedownListener, { capture: true }) // after 'mousedown' it leaves us ~80ms prerender time to mouseup.
 
-	// @todo Add prefetchLimit & test if multiple prefetches work on on rel element
 	if (useViewport && window.IntersectionObserver && 'isIntersecting' in IntersectionObserverEntry.prototype) {
 		// https://www.andreaverlicchi.eu/quicklink-optimal-options/
 		const SCROLL_DELAY = 'instantScrollDelay' in dataset ? +dataset.instantScrollDelay : 500
@@ -55,7 +55,8 @@
 			})
 		}
 
-		const hrefsInViewport = []
+		const hrefsInViewport = new Set()
+		let len = 0
 
 		triggeringFunction(() => {
 			const intersectionObserver = new IntersectionObserver(
@@ -64,24 +65,22 @@
 						const entry = entries[i]
 						const linkElement = entry.target
 
-						if (hrefsInViewport.length > PREFETCH_LIMIT) return
+						if (len > PREFETCH_LIMIT) return
 
 						if (entry.isIntersecting) {
 							// Adding href to array of hrefsInViewport
-							hrefsInViewport.push(linkElement.href)
+							hrefsInViewport.add(linkElement.href)
+							++len
 
 							setTimeout(() => {
 								// Do not prefetch if not found in viewport
-								if (hrefsInViewport.indexOf(linkElement.href) === -1) return
+								if (!hrefsInViewport.has(linkElement.href)) return
 
 								intersectionObserver.unobserve(linkElement)
 								preload(linkElement.href, false, true)
 							}, SCROLL_DELAY)
 						} else {
-							const index = hrefsInViewport.indexOf(linkElement.href)
-							if (index !== -1) {
-								hrefsInViewport.splice(index)
-							}
+							hrefsInViewport.delete(index)
 						}
 					}
 				},
@@ -145,7 +144,7 @@
 	 */
 	function mouseoutListener(event) {
 		const target = event.target
-		if (event.relatedTarget && (!('closest' in target) || target.closest('a') === event.relatedTarget.closest('a'))) return
+		if (event.relatedTarget && target.closest('a') === event.relatedTarget.closest('a')) return
 
 		if (mouseoverTimer) {
 			clearTimeout(mouseoverTimer)
@@ -198,7 +197,7 @@
 		let href
 		if (linkElement === null || !(href = linkElement.href)) return false
 
-		if ((!ignoreUrlCheck && preloadedUrls.indexOf(href) !== -1) || href.charCodeAt(0) === 35 /* # */) return false
+		if ((!ignoreUrlCheck && preloadedUrls.has(href)) || href.charCodeAt(0) === 35 /* # */) return false
 
 		const preloadLocation = new URL(href)
 
@@ -221,7 +220,7 @@
 	 */
 	function _prefetch(url, important, newTag) {
 		console.log('prefetch', url)
-		preloadedUrls.push(url)
+		preloadedUrls.add(url)
 
 		let fetcher = prefetcher
 		if (newTag) {
@@ -266,7 +265,7 @@
 	 */
 	function _preload(url, important, newTag) {
 		console.log('preload', url)
-		preloadedUrls.push(url)
+		preloadedUrls.add(url)
 
 		let fetcher = prefetcher
 		if (newTag) {
