@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "minify": "terser instantpage.js --compress drop_console=true --mangle --toplevel --comments \"/^!/\" --output dist/instantpage.min.js",
+    "minify": "terser instantpage.js  --source-map --compress drop_console=true --mangle --toplevel --comments \"/^!/\" --output dist/instantpage.min.js",
     "build": "rm -r -f dist && mkdir dist && npm run minify",
     "lint": "exit 0"
   },
