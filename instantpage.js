@@ -221,20 +221,16 @@
 	 */
 	function _prefetch(url, important, newTag) {
 		console.log('prefetch', url)
+
 		preloadedUrls.add(url)
 
-		let fetcher = prefetcher
-		if (newTag) {
-			fetcher = document.createElement('link')
-			head.appendChild(fetcher)
-		}
-
-		fetcher.rel = 'prefetch'
-		fetcher.href = url
+		const fetcher = newTag ? document.createElement('link') : prefetcher
 		if (important) fetcher.setAttribute('importance', 'high')
-	}
+		fetcher.href = url
+		fetcher.rel = 'prefetch'
 
-	let speculationTag
+		if (newTag) head.appendChild(fetcher)
+	}
 
 	/**
 	 * @param {string} url
@@ -242,20 +238,19 @@
 	 */
 	function prerender(url, important) {
 		console.log('prerender', url)
-		prefetcher.rel = 'prerender prefetch' // trigger both at the same time
-		prefetcher.href = url
+
+		preloadedUrls.add(url)
+
 		if (important) prefetcher.setAttribute('importance', 'high')
+		prefetcher.href = url
+		prefetcher.rel = 'prerender prefetch' // trigger both at the same time
 
 		// https://docs.google.com/document/d/1P2VKCLpmnNm_cRAjUeE-bqLL0bslL_zKqiNeCzNom_w/edit
 		if (isMobile) {
-			if (!speculationTag) {
-				speculationTag = document.createElement('script')
-				speculationTag.type = 'speculationrules'
-				head.appendChild(speculationTag)
-			}
-
-			const obj = { prerender: [{ source: 'list', urls: [url] }] }
-			speculationTag.textContent = JSON.stringify(obj)
+			const speculationTag = document.createElement('script')
+			speculationTag.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] })
+			speculationTag.type = 'speculationrules'
+			head.appendChild(speculationTag)
 		}
 	}
 
@@ -266,17 +261,15 @@
 	 */
 	function _preload(url, important, newTag) {
 		console.log('preload', url)
+
 		preloadedUrls.add(url)
 
-		let fetcher = prefetcher
-		if (newTag) {
-			fetcher = document.createElement('link')
-			head.appendChild(fetcher)
-		}
-
-		fetcher.rel = 'preload'
+		const fetcher = newTag ? document.createElement('link') : prefetcher
 		fetcher.as = 'fetch' // Safari doesn't support `document`
 		fetcher.href = url
+		fetcher.rel = 'preload' // Safari wants preload set last
+
+		if (newTag) head.appendChild(fetcher)
 	}
 
 	function stopPreloading() {
