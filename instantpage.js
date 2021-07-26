@@ -19,9 +19,10 @@
 	const isPrerenderSupported = supports && relList.supports('prerender')
 	const preload = !supports || relList.supports('prefetch') ? _prefetch : relList.supports('preload') ? _preload : () => {} // Safari (11.1, mobile 11.3) only supports preload; for other browser we prefer prefetch over preload
 
-	const connection = navigator.connection
-	const has3G = connection !== undefined && connection.effectiveType.includes('3g')
-	const saveData = connection !== undefined && (connection.saveData || connection.effectiveType.includes('2g'))
+	const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {}
+	const effectiveType = typeof connection.effectiveType === 'string' ? connection.effectiveType : ''
+	const has3G = effectiveType.indexOf('3g') !== -1
+	const saveData = connection.saveData || effectiveType.indexOf('2g') !== -1
 
 	let dataset = document.body.dataset
 	const mousedownShortcut = 'instantMousedown' in dataset
