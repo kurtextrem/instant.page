@@ -2,11 +2,15 @@
 
 **Make your site’s pages instant in 1 minute and improve your conversion rate by 1%.**
 
-:information_source: Info is on [the website](https://instant.page).
+ℹ️ Info is on [the website](https://instant.page).
 
-:scroll: The source is in [instantpage.js](https://github.com/instantpage/instant.page/blob/master/instantpage.js).
+Changes of this fork:
 
-:star2: Star this repository to follow its development.
+ 🚀  &nbsp; Added `prerender` for Blink based browsers, which improves performance even more than `prefetch`
+ 
+ ✨  &nbsp; Support for Safari, where only `preload` is supported [at the moment](https://caniuse.com/link-rel-prefetch)
+
+ 🧪  &nbsp; For Chrome on Android: this fork implements the [PrerenderV2](https://docs.google.com/document/d/1P2VKCLpmnNm_cRAjUeE-bqLL0bslL_zKqiNeCzNom_w/edit) `speculationrules` script tag.
 
 ## Tests
 
@@ -18,4 +22,4 @@ And access http://127.0.0.1:8000/. Or specify another port with an argument afte
 
 ## Minifying
 
-To minify instantpage.js into instantpage.min.js install uglify-es globally (`npm i uglify-es -g`) then run `npm run minify`.
+To minify instantpage.js into dist/instantpage.min.js install terser globally (`npm i terser -g`) then run `npm run minify`.
