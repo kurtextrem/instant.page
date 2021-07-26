@@ -274,9 +274,13 @@
 			head.appendChild(fetcher)
 		}
 
-		prefetcher.rel = 'preload'
-		prefetcher.as = 'document'
-		prefetcher.href = url
+		try {
+			fetcher.rel = 'preload'
+			fetcher.as = 'document'
+			fetcher.href = url
+		} catch (e) {
+			fetcher.as = 'fetch' // Safari doesn't support `document`
+		}
 	}
 
 	function stopPreloading() {
