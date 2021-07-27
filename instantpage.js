@@ -283,6 +283,5 @@
 		prefetcher.removeAttribute('rel') // so we don't trigger an empty prerender
 		prefetcher.removeAttribute('href') // might not cancel, if this isn't removed
 		prefetcher.removeAttribute('importance')
-		// speculationTag.textContent = '' // not sure if this works
 	}
 })(document, location, Date)
