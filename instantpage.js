@@ -3,10 +3,10 @@
 ;(function (document, location, Date) {
 	'use strict'
 
-	const prefetcher = document.createElement('link')
-	if (!('closest' in prefetcher) || !('Set' in window)) return
+	if (!('Set' in window)) return
 	// min browsers: Edge 15, Firefox 54, Chrome 51, Safari 10, Opera 38, Safari Mobile 10
-
+	
+	const prefetcher = document.createElement('link')
 	const head = document.head
 	head.appendChild(prefetcher)
 
@@ -103,6 +103,13 @@
 
 	let isMobile = false
 
+	function checkForClosestAnchor(event, relatedTarget) {
+		const target = !relatedTarget? event.target : event.relatedTarget
+		if (!target || typeof target.closest !== 'function') return
+
+		return target.closest('a')
+	}
+
 	/**
 	 * @param {{ target: { closest: (arg0: string) => any; }; }} event
 	 */
@@ -113,7 +120,7 @@
 		 * must be assigned on touchstart to be measured on mouseover. */
 		lastTouchTimestamp = Date.now()
 
-		const linkElement = event.target.closest('a')
+		const linkElement = checkForClosestAnchor(event)
 		if (!isPreloadable(linkElement)) return
 
 		window.addEventListener('scroll', mouseoutListener, { once: true }) // if a scroll occurs before HOVER_DELAY, user is scrolling around
@@ -127,7 +134,7 @@
 	function mouseoverListener(event) {
 		if (Date.now() - lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) return
 
-		const linkElement = event.target.closest('a')
+		const linkElement = checkForClosestAnchor(event)
 		if (!isPreloadable(linkElement)) return
 
 		linkElement.addEventListener('mouseout', mouseoutListener)
@@ -145,8 +152,7 @@
 	 * @param {{ relatedTarget: { closest: (arg0: string) => any; }; target: { closest: (arg0: string) => any; }; }} event
 	 */
 	function mouseoutListener(event) {
-		const target = event.target
-		if (event.relatedTarget && target.closest('a') === event.relatedTarget.closest('a')) return
+		if (checkForClosestAnchor(event) === checkForClosestAnchor(event, true)) return
 
 		if (mouseoverTimer) {
 			clearTimeout(mouseoverTimer)
@@ -165,8 +171,8 @@
 
 		if (event.which > 1 || event.metaKey || event.ctrlKey) return
 
-		const linkElement = event.target.closest('a')
-		if (linkElement === null || 'noInstant' in linkElement.dataset || linkElement.getAttribute('download') !== null) return // we don't use isPreloadable because this might lead to external links
+		const linkElement = checkForClosestAnchor(event)
+		if (!linkElement || 'noInstant' in linkElement.dataset || linkElement.getAttribute('download') !== null) return // we don't use isPreloadable because this might lead to external links
 
 		linkElement.addEventListener(
 			'click',
@@ -185,7 +191,7 @@
 		if (Date.now() - lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) return
 		if (event.which > 1 || event.metaKey || event.ctrlKey) return
 
-		const linkElement = event.target.closest('a')
+		const linkElement = checkForClosestAnchor(event)
 		if (!isPreloadable(linkElement, true)) return
 
 		prerender(linkElement.href, true)
@@ -197,7 +203,7 @@
 	 */
 	function isPreloadable(linkElement, ignoreUrlCheck) {
 		let href
-		if (linkElement === null || !(href = linkElement.href)) return false
+		if (!linkElement || !(href = linkElement.href)) return false
 
 		if ((!ignoreUrlCheck && preloadedUrls.has(href)) || href.charCodeAt(0) === 35 /* # */) return false
 
