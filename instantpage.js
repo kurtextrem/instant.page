@@ -248,17 +248,15 @@
 
 		preloadedUrls.add(url)
 
+		// trigger PrerenderV2 https://chromestatus.com/feature/5197044678393856
+		const speculationTag = document.createElement('script')
+		speculationTag.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] })
+		speculationTag.type = 'speculationrules'
+		head.appendChild(speculationTag)
+
 		if (important) prefetcher.setAttribute('importance', 'high')
 		prefetcher.href = url
 		prefetcher.rel = 'prerender prefetch' // trigger both at the same time
-
-		// https://docs.google.com/document/d/1P2VKCLpmnNm_cRAjUeE-bqLL0bslL_zKqiNeCzNom_w/edit
-		if (isMobile) {
-			const speculationTag = document.createElement('script')
-			speculationTag.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] })
-			speculationTag.type = 'speculationrules'
-			head.appendChild(speculationTag)
-		}
 	}
 
 	/**

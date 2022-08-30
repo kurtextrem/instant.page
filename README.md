@@ -10,12 +10,12 @@ Changes of this fork:
  
  ✨  &nbsp; Support for Safari, where only `preload` is supported [at the moment](https://caniuse.com/link-rel-prefetch)
 
- 🧪  &nbsp; For Chrome on Android: this fork implements the [PrerenderV2](https://docs.google.com/document/d/1P2VKCLpmnNm_cRAjUeE-bqLL0bslL_zKqiNeCzNom_w/edit) `speculationrules` script tag.
+ 🧪  &nbsp; For Chrome only (mobile/desktop): this fork implements the [PrerenderV2](https://chromestatus.com/feature/5197044678393856) `speculationrules` script tag.
  
  The new flow is as follows:
  
  - On desktop, hover: `prefetch` (`preload` in Safari) after `HOVER_DELAY` ms (**65 ms** by default, can be set by adding `data-instant-intensity` to the body)
- - On desktop, click: `prerender`
+ - On desktop, click: `prerender` + `speculationrules`
  - On mobile, hover & click: `prerender` + `speculationrules` (since hover is most likely a click on mobile)
  - On mobile, if network is slower than 4G (LTE) or `Save-Data` is enabled, we cancel previous fetches when a new link is hovered
 
