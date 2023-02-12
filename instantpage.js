@@ -28,12 +28,36 @@
 	const mousedownShortcut = 'instantMousedown' in dataset
 	const allowQueryString = 'instantAllowQueryString' in dataset
 	const allowExternalLinks = 'instantAllowExternalLinks' in dataset
+	
+	let chromiumMajorVersionClientHint = null
+	// `navigator.userAgentData` is available in Chromium 90+,
+	// though it was not enabled for everyone at first.
+	// So it’s only reliable for Chromium ~100+, and only on HTTPS or localhost.
+	if (allowExternalLinks && navigator.userAgentData) {
+  		navigator.userAgentData.brands.forEach(({brand, version}) => {
+    			if (brand == 'Chromium') {
+      				chromiumMajorVersionClientHint = parseInt(version)
+    			}
+  		})
+	}
+	
 	const useViewport =
 		!saveData &&
 		'instantViewport' in dataset &&
-		/* Biggest iPhone resolution (which we want): 414 * 896 = 370944
-		 * Small 7" tablet resolution (which we don't want): 600 * 1024 = 614400
-		 * Note that the viewport (which we check here) is smaller than the resolution due to the UI's chrome */
+		// Smartphones are the most likely to have a slow connection, and
+          	// their small screen size limits the number of links (and thus
+          	// server load).
+          	//
+          	// Foldable phones (being expensive as of 2023), tablets and PCs
+          	// generally have a decent connection, and a big screen displaying
+          	// more links that would put more load on the server.
+          	//
+          	// iPhone 14 Pro Max (want): 430×932 = 400 760
+          	// Samsung Galaxy S22 Ultra with display size set to 80% (want):
+          	// 450×965 = 434 250
+          	// Small tablet (don’t want): 600×960 = 576 000
+          	// Those number are virtual screen size, the viewport (used for
+          	// the check above) will be smaller with the browser’s interface.
 		('instantViewportMobile' in dataset || document.documentElement.clientWidth * document.documentElement.clientHeight > 450000)
 
 	const DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111
@@ -209,7 +233,12 @@
 
 		const preloadLocation = new URL(href)
 
-		if (!allowExternalLinks && preloadLocation.origin !== location.origin && !('instant' in linkElement.dataset)) return false
+		if (linkElement.origin != location.origin) {
+    			let allowed = allowExternalLinks || 'instant' in linkElement.dataset
+    			if (!allowed || !chromiumMajorVersionClientHint) {
+      				return false
+    			}
+  		}
 
 		if (preloadLocation.protocol !== 'http:' && preloadLocation.protocol !== 'https:') return false
 		if (preloadLocation.protocol === 'http:' && location.protocol === 'https:') return false
@@ -232,9 +261,13 @@
 		preloadedUrls.add(url)
 
 		const fetcher = newTag ? document.createElement('link') : prefetcher
-		if (important) fetcher.setAttribute('importance', 'high')
+		if (important) fetcher.fetchPriority = 'high'
 		fetcher.href = url
 		fetcher.rel = 'prefetch'
+		fetcher.as = 'document'
+  		// as=document is Chromium-only and allows cross-origin prefetches to be
+  		// usable for navigation. They call it “restrictive prefetch” and intend
+  		// to remove it: https://crbug.com/1352371
 
 		if (newTag) head.appendChild(fetcher)
 	}
@@ -254,9 +287,13 @@
 		speculationTag.type = 'speculationrules'
 		head.appendChild(speculationTag)
 
-		if (important) prefetcher.setAttribute('importance', 'high')
+		if (important) prefetcher.fetchPriority = 'high'
 		prefetcher.href = url
 		prefetcher.rel = 'prerender prefetch' // trigger both at the same time
+		prefetcher.as = 'document'
+  		// as=document is Chromium-only and allows cross-origin prefetches to be
+  		// usable for navigation. They call it “restrictive prefetch” and intend
+  		// to remove it: https://crbug.com/1352371
 	}
 
 	/**
@@ -280,6 +317,6 @@
 	function stopPreloading() {
 		prefetcher.removeAttribute('rel') // so we don't trigger an empty prerender
 		prefetcher.removeAttribute('href') // might not cancel, if this isn't removed
-		prefetcher.removeAttribute('importance')
+		prefetcher.removeAttribute('fetchPriority')
 	}
 })(document, location, Date)
