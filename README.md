@@ -12,7 +12,7 @@ Changes of this fork:
 
  🧪  &nbsp; For Chrome only (mobile/desktop): this fork implements the [PrerenderV2](https://chromestatus.com/feature/5197044678393856) `speculationrules` script tag.
  
- ⏱️  &nbsp; Sets the `prefetch` priority to `high` on click ([recently](https://github.com/instantpage/instant.page/commit/e7648798ac3255f5852bb0856b2bbef90cac1f1a) added by the original instant.page too) 
+ ⏱️  &nbsp; Sets the `prefetch` fetch priority to `high` on click/touch ([recently](https://github.com/instantpage/instant.page/commit/e7648798ac3255f5852bb0856b2bbef90cac1f1a) added by the original instant.page too) 
  
  The new flow is as follows:
  
