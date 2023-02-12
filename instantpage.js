@@ -313,11 +313,11 @@
 		preloadedUrls.add(url)
 
 		const fetcher = newTag ? document.createElement('link') : prefetcher
+		// although Safari doesn't support `fetchPriority`, we can still set it (and hope for the best in the future)
+		if (important) fetcher.setAttribute('fetchPriority', 'high')
 		fetcher.as = 'fetch' // Safari doesn't support `document`
 		fetcher.href = url
 		fetcher.rel = 'preload' // Safari wants preload set last
-		// although Safari doesn't support `fetchPriority`, we can still set it (and hope for the best in the future)
-		if (important) fetcher.setAttribute('fetchPriority', 'high')
 
 		if (newTag) head.appendChild(fetcher)
 	}
