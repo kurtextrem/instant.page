@@ -10,6 +10,8 @@
 	const head = document.head
 	head.appendChild(prefetcher)
 
+	// this set is needed to take care of the "exceeded 10 prerenders" message, which happens if you try to prerender
+	// the same URL multiple times. This issue is fixed in Chromium 110+. https://crbug.com/1397727
 	const preloadedUrls = new Set()
 	let mouseoverTimer = 0
 	let lastTouchTimestamp = 0
@@ -33,10 +35,10 @@
 	// `navigator.userAgentData` is available in Chromium 90+,
 	// though it was not enabled for everyone at first.
 	// So it’s only reliable for Chromium ~100+, and only on HTTPS or localhost.
-	if (allowExternalLinks && navigator.userAgentData) {
-  		navigator.userAgentData.brands.forEach(({brand, version}) => {
-    			if (brand == 'Chromium') {
-      				chromiumMajorVersionClientHint = parseInt(version)
+	if (navigator.userAgentData) {
+  		navigator.userAgentData.brands.forEach(function(obj) {
+    			if (obj.brand == 'Chromium') {
+      				chromiumMajorVersionClientHint = +obj.version
     			}
   		})
 	}
@@ -71,7 +73,7 @@
 
 	if (useViewport && window.IntersectionObserver && 'isIntersecting' in IntersectionObserverEntry.prototype) {
 		// https://www.andreaverlicchi.eu/quicklink-optimal-options/
-		const PREFETCH_LIMIT = !has3G ? ('instantAllowExternalLinks' in dataset ? +dataset.instantLimit : 1 / 0) : 1 // Infinity
+		const PREFETCH_LIMIT = !has3G ? (allowExternalLinks ? +dataset.instantLimit : 1 / 0) : 1 // Infinity
 		const SCROLL_DELAY = 'instantScrollDelay' in dataset ? +dataset.instantScrollDelay : 500
 		const THRESHOLD = 0.75
 
@@ -261,7 +263,7 @@
 		preloadedUrls.add(url)
 
 		const fetcher = newTag ? document.createElement('link') : prefetcher
-		if (important) fetcher.fetchPriority = 'high'
+		if (important) fetcher.setAttribute('fetchPriority', 'high')
 		fetcher.href = url
 		fetcher.rel = 'prefetch'
 		fetcher.as = 'document'
@@ -282,12 +284,16 @@
 		preloadedUrls.add(url)
 
 		// trigger PrerenderV2 https://chromestatus.com/feature/5197044678393856
-		const speculationTag = document.createElement('script')
-		speculationTag.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] })
-		speculationTag.type = 'speculationrules'
-		head.appendChild(speculationTag)
+		// Before Chromium 107, adding another speculation tag instead of modifying the existing one fails; but we ignore this scenario
+		// since modifying would introduce more work (e.g. parsing the content of the tag before updating the content)
+		if (chromiumMajorVersionClientHint) {
+			const speculationTag = document.createElement('script')
+			speculationTag.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] })
+			speculationTag.type = 'speculationrules'
+			head.appendChild(speculationTag)
+		}
 
-		if (important) prefetcher.fetchPriority = 'high'
+		if (important) prefetcher.setAttribute('fetchPriority', 'high')
 		prefetcher.href = url
 		prefetcher.rel = 'prerender prefetch' // trigger both at the same time
 		prefetcher.as = 'document'
@@ -310,6 +316,8 @@
 		fetcher.as = 'fetch' // Safari doesn't support `document`
 		fetcher.href = url
 		fetcher.rel = 'preload' // Safari wants preload set last
+		// although Safari doesn't support `fetchPriority`, we can still set it (and hope for the best in the future)
+		if (important) fetcher.setAttribute('fetchPriority', 'high')
 
 		if (newTag) head.appendChild(fetcher)
 	}
@@ -318,5 +326,6 @@
 		prefetcher.removeAttribute('rel') // so we don't trigger an empty prerender
 		prefetcher.removeAttribute('href') // might not cancel, if this isn't removed
 		prefetcher.removeAttribute('fetchPriority')
+		prefetcher.removeAttribute('as')
 	}
 })(document, location, Date)
