@@ -30,6 +30,7 @@
 	const mousedownShortcut = 'instantMousedown' in dataset
 	const allowQueryString = 'instantAllowQueryString' in dataset
 	const allowExternalLinks = 'instantAllowExternalLinks' in dataset
+	const allowSpeculationRules = !('instantNoSpeculation' in dataset)
 	
 	let chromiumMajorVersionClientHint = null
 	// `navigator.userAgentData` is available in Chromium 90+,
@@ -283,23 +284,18 @@
 
 		preloadedUrls.add(url)
 
-		// trigger PrerenderV2 https://chromestatus.com/feature/5197044678393856
-		// Before Chromium 107, adding another speculation tag instead of modifying the existing one fails; but we ignore this scenario
-		// since modifying would introduce more work (e.g. parsing the content of the tag before updating the content)
-		if (chromiumMajorVersionClientHint) {
+		// trigger PrerenderV2: https://chromestatus.com/feature/5197044678393856
+		// Before Chromium 107, adding another speculation tag instead of modifying the existing one fails
+		if (allowSpeculationRules && chromiumMajorVersionClientHint >= 107) {
 			const speculationTag = document.createElement('script')
 			speculationTag.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] })
 			speculationTag.type = 'speculationrules'
 			head.appendChild(speculationTag)
+		} else {
+			if (important) prefetcher.setAttribute('fetchPriority', 'high')
+			prefetcher.href = url
+			prefetcher.rel = 'prerender'
 		}
-
-		if (important) prefetcher.setAttribute('fetchPriority', 'high')
-		prefetcher.href = url
-		prefetcher.rel = 'prerender prefetch' // trigger both at the same time
-		prefetcher.as = 'document'
-  		// as=document is Chromium-only and allows cross-origin prefetches to be
-  		// usable for navigation. They call it “restrictive prefetch” and intend
-  		// to remove it: https://crbug.com/1352371
 	}
 
 	/**
