@@ -286,16 +286,16 @@
 
 		// trigger PrerenderV2: https://chromestatus.com/feature/5197044678393856
 		// Before Chromium 107, adding another speculation tag instead of modifying the existing one fails
-		if (allowSpeculationRules && chromiumMajorVersionClientHint >= 107) {
+		if (allowSpeculationRules) { // && chromiumMajorVersionClientHint >= 107; but this check would exclude other Chromium browsers (Opera) that support this.
 			const speculationTag = document.createElement('script')
 			speculationTag.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] })
 			speculationTag.type = 'speculationrules'
 			head.appendChild(speculationTag)
-		} else {
-			if (important) prefetcher.setAttribute('fetchPriority', 'high')
-			prefetcher.href = url
-			prefetcher.rel = 'prerender'
 		}
+		
+		if (important) prefetcher.setAttribute('fetchPriority', 'high')
+		prefetcher.href = url
+		prefetcher.rel = 'prerender'
 	}
 
 	/**
