@@ -36,7 +36,7 @@ See [this](https://docs.google.com/document/d/1_9XkDUKMGf2f3tDt1gvQQjfliNLpGyFf3
 - A URL to a page that causes server-side ad conversion tracking
 - Large resources (e.g. zip files, mp4, ...)
 
-⚠️ Chromium currently ignores HTTP `cache-control: no-store` headers for prefetch/prerender and generally caches prefetched pages for ~5 minutes. This might change in the [future](https://chromestatus.com/feature/5087526916718592).
+⚠️ Chromium currently ignores HTTP `cache-control` (including `no-store`) header for prefetch/prerender and generally caches prefetched pages for ~5 minutes. This might change in the [future](https://chromestatus.com/feature/5087526916718592).
 
 ### Fixing on the client
 
@@ -53,6 +53,12 @@ As alternative, you can check the request for the `Sec-Purpose` HTTP header, whi
 See [this](https://developer.chrome.com/blog/prerender-pages/#detecting-and-disabling-prerendering) article from the Chrome DevRels Team.
 
 A quick note for testing: Switching tabs currently cancels any prerenders, keep this in mind while debugging.
+
+## Prerender Limitations
+
+- PrerenderV2 is [disabled](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.cc;l=44;drc=61bc5ca953c07dca60dd1e4de000da97e7bc4e3f;bpv=1;bpt=1) on Android devices with less than 1.7 GB of memory, [tracking bug](https://bugs.chromium.org/p/chromium/issues/detail?id=1382697)
+- Prerender/prefetch is disabled if the user has OS-level data-saver or battery-saver turned on, or if the user has "preload pages" turned off in chrome://settings
+- PrerenderV2 consumes 30 - 100 MiB per prerendered page
 
 ## Tests
 
