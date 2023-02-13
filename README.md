@@ -8,17 +8,17 @@ Changes of this fork:
 
  🚀  &nbsp; Added `prerender` for Blink based browsers, which improves performance even more than `prefetch`
  
- ✨  &nbsp; Support for Safari, where only `preload` is supported [at the moment](https://caniuse.com/link-rel-prefetch)
-
  🧪  &nbsp; For Chrome only (mobile/desktop): this fork implements the [PrerenderV2](https://chromestatus.com/feature/5197044678393856) `speculationrules` script tag.
  
+ ✨  &nbsp; Support for Safari, where only `preload` is supported [at the moment](https://caniuse.com/link-rel-prefetch) [*](#preload-limiations)
+
  ⏱️  &nbsp; Sets the `prefetch` fetch priority to `high` on click/touch ([recently](https://github.com/instantpage/instant.page/commit/e7648798ac3255f5852bb0856b2bbef90cac1f1a) added by the original instant.page too) 
  
  The new flow is as follows:
  
  - On desktop, hover: `prefetch` (`preload` in Safari) after `HOVER_DELAY` ms (**65 ms** by default, can be set by adding `data-instant-intensity` to the body)
- - On desktop, click: `prerender` + `speculationrules`
- - On mobile, hover & click: `prerender` + `speculationrules` (since hover is most likely a click on mobile)
+ - On desktop, click: `prerender` + `speculationrules prerender`
+ - On mobile, hover & click: `prerender` + `speculationrules prerender` (since hover is most likely a click on mobile)
  - On mobile, if network is slower than 4G (LTE) or `Save-Data` is enabled, we cancel previous fetches when a new link is hovered
 
 ## Content-Security-Policy (CSP)
@@ -54,11 +54,19 @@ See [this](https://developer.chrome.com/blog/prerender-pages/#detecting-and-disa
 
 A quick note for testing: Switching tabs currently cancels any prerenders, keep this in mind while debugging.
 
+## Prefetch Limitations
+
+Prefetch and prerender do not use the same in-flight request, so they will create two separate requests. However, navigational requests will re-use the in-flight request or [request the remaining bytes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Link_prefetching_FAQ#what_happens_if_i_click_on_a_link_while_something_is_being_prefetched) of a request.
+
 ## Prerender Limitations
 
 - PrerenderV2 is [disabled](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.cc;l=44;drc=61bc5ca953c07dca60dd1e4de000da97e7bc4e3f;bpv=1;bpt=1) on Android devices with less than 1.7 GB of memory, [tracking bug](https://bugs.chromium.org/p/chromium/issues/detail?id=1382697)
 - Prerender/prefetch is disabled if the user has OS-level data-saver or battery-saver turned on, or if the user has "preload pages" turned off in chrome://settings
 - PrerenderV2 consumes 30 - 100 MiB per prerendered page
+
+## Preload Limitations
+
+Preloads in Safari are sent using `as=fetch`, which makes them ineligible for navigational requests (in other words: when a user clicks on the link, it won't re-use the preload request). However, the requests can still be used to e.g. prime CDN cache.
 
 ## Tests
 
