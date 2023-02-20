@@ -66,7 +66,8 @@
 	const DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111
 	const HOVER_DELAY = 'instantIntensity' in dataset ? +dataset.instantIntensity : 65
 
-	document.addEventListener('touchstart', touchstartListener, { capture: true, passive: true })
+	if (preload !== _preload) // only trigger `prefetch` requests on mobile, as ~90ms is too slow to get a preload done on mobile 
+		document.addEventListener('touchstart', touchstartListener, { capture: true, passive: true })
 	document.addEventListener('mouseover', mouseoverListener, { capture: true })
 
 	if (mousedownShortcut) document.addEventListener('mousedown', mousedownShortcutListener, { capture: true })
