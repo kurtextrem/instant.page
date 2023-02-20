@@ -305,6 +305,9 @@
 	 * @param newTag
 	 */
 	function _preload(url, important, newTag) {
+		if (isMobile) // ~90ms is too slow to get a preload done on mobile (request can not be re-used)
+			return;
+		
 		console.log('preload', url)
 
 		preloadedUrls.add(url)
