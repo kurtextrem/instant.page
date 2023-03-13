@@ -63,6 +63,8 @@ Prefetch and prerender do not use the same in-flight request, so they will creat
 - PrerenderV2 is [disabled](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.cc;l=44;drc=61bc5ca953c07dca60dd1e4de000da97e7bc4e3f;bpv=1;bpt=1) on Android devices with less than 1.7 GB of memory, [tracking bug](https://bugs.chromium.org/p/chromium/issues/detail?id=1382697)
 - Prerender/prefetch is disabled if the user has OS-level data-saver or battery-saver turned on, or if the user has "preload pages" turned off in chrome://settings
 - PrerenderV2 consumes 30 - 100 MiB per prerendered page
+- For background tabs, PrerenderV2 keeps prerendered pages in memory for up to [180 seconds](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.h;l=61;drc=19f3c214cd4f78e0fe47b2ccafaca406aaacd42f)
+- Maximum of 10 prerenders are allowed at once ([source](https://docs.google.com/document/d/1Cp4KK6lVftKcsrrlg5F5yOfXxZZW_jilcOAfbRTIA64/edit)), removing the `speculationrule` removes the prerendered process and frees up a slot in the 10-prerender limit
 
 ## Preload Limitations
 
