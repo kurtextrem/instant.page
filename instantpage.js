@@ -70,10 +70,12 @@
 	// we need to do this, as prefetch + speculationrules do not share the same request (so we might end up with 2-3 reqs)
 	if (preload !== _preload)
 		document.addEventListener('touchstart', touchstartListener, { capture: true, passive: true })
-	document.addEventListener('mouseover', mouseoverListener, { capture: true })
 
-	if (mousedownShortcut) document.addEventListener('mousedown', mousedownShortcutListener, { capture: true })
-	if (isPrerenderSupported) document.addEventListener('mousedown', mousedownListener, { capture: true }) // after 'mousedown' it leaves us ~80ms prerender time to mouseup.
+	let listenerOptions = { capture: true }
+	document.addEventListener('mouseover', mouseoverListener, listenerOptions)
+
+	if (mousedownShortcut) document.addEventListener('mousedown', mousedownShortcutListener, listenerOptions)
+	if (isPrerenderSupported) document.addEventListener('mousedown', mousedownListener, listenerOptions) // after 'mousedown' it leaves us ~80ms prerender time to mouseup.
 
 	if (useViewport && window.IntersectionObserver && 'isIntersecting' in IntersectionObserverEntry.prototype) {
 		// https://www.andreaverlicchi.eu/quicklink-optimal-options/
@@ -129,7 +131,7 @@
 		})
 	}
 
-	dataset = relList = null // GC
+	dataset = relList = listenerOptions = null // GC
 
 	let isMobile = false
 
