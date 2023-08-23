@@ -30,7 +30,7 @@
 	const mousedownShortcut = 'instantMousedown' in dataset
 	const allowQueryString = 'instantAllowQueryString' in dataset
 	const allowExternalLinks = 'instantAllowExternalLinks' in dataset
-	const allowSpeculationRules = !('instantNoSpeculation' in dataset)
+	const allowSpeculationRules = !('instantNoSpeculation' in dataset) && HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules')
 	
 	let chromiumMajorVersionClientHint = null
 	// `navigator.userAgentData` is available in Chromium 90+,
@@ -66,7 +66,9 @@
 	const DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111
 	const HOVER_DELAY = 'instantIntensity' in dataset ? +dataset.instantIntensity : 65
 
-	if (preload !== _preload) // only trigger `prefetch` requests on mobile, as ~90ms is too slow to get a preload done on mobile 
+	// only trigger `prefetch` requests on mobile, as ~90ms is too slow to get a preload done on mobile;
+	// we need to do this, as prefetch + speculationrules do not share the same request (so we might end up with 2-3 reqs)
+	if (preload !== _preload)
 		document.addEventListener('touchstart', touchstartListener, { capture: true, passive: true })
 	document.addEventListener('mouseover', mouseoverListener, { capture: true })
 
@@ -264,6 +266,16 @@
 
 		preloadedUrls.add(url)
 
+		// trigger PrerenderV2: https://chromestatus.com/feature/5197044678393856
+		// Before Chromium 107, adding another speculation tag instead of modifying the existing one fails
+		/*if (allowSpeculationRules) { // && chromiumMajorVersionClientHint >= 107; but this check would exclude other Chromium browsers (Opera) that support this.
+			const speculationTag = document.createElement('script')
+			speculationTag.textContent = JSON.stringify({ prefetch: [{ source: 'list', urls: [url] }] })
+			speculationTag.type = 'speculationrules'
+			head.appendChild(speculationTag)
+			return;
+		}*/
+
 		const fetcher = newTag ? document.createElement('link') : prefetcher
 		if (important) fetcher.setAttribute('fetchPriority', 'high')
 		fetcher.href = url
@@ -292,6 +304,7 @@
 			speculationTag.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] })
 			speculationTag.type = 'speculationrules'
 			head.appendChild(speculationTag)
+			return;
 		}
 		
 		if (important) prefetcher.setAttribute('fetchPriority', 'high')
