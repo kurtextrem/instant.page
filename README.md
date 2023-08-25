@@ -56,16 +56,18 @@ A quick note for testing: Switching tabs currently cancels any prerenders, keep 
 
 ## Prefetch Limitations
 
-Prefetch and prerender do not use the same in-flight request, so they will create two separate requests. However, navigational requests will re-use the in-flight request or [request the remaining bytes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Link_prefetching_FAQ#what_happens_if_i_click_on_a_link_while_something_is_being_prefetched) of a request.
+In older Chromes (< 116), prefetch and prerender did not use the same in-flight request, so they created two separate requests.
+
+Navigational requests will re-use the in-flight request or [request the remaining bytes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Link_prefetching_FAQ#what_happens_if_i_click_on_a_link_while_something_is_being_prefetched) of a request.
 
 ## Prerender Limitations
 
-- PrerenderV2 is [disabled](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.cc;l=44;drc=61bc5ca953c07dca60dd1e4de000da97e7bc4e3f;bpv=1;bpt=1) on Android devices with less than 1.7 GB of memory, [tracking bug](https://bugs.chromium.org/p/chromium/issues/detail?id=1382697)
 - Prerender/prefetch is disabled if the user has OS-level data-saver or battery-saver turned on, or if the user has "preload pages" turned off in chrome://settings
 - PrerenderV2 consumes 30 - 100 MiB per prerendered page
 - For background tabs, PrerenderV2 keeps prerendered pages in memory for up to [180 seconds](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.h;l=61;drc=19f3c214cd4f78e0fe47b2ccafaca406aaacd42f)
 - Maximum of 10 prerenders are allowed at once ([source](https://docs.google.com/document/d/1Cp4KK6lVftKcsrrlg5F5yOfXxZZW_jilcOAfbRTIA64/edit)), removing the `speculationrule` removes the prerendered process and frees up a slot in the 10-prerender limit
-- Prerendering is disabled when Chrome uses over 10% of the total RAM available of the device ([source](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.cc;l=1107;drc=61bc5ca953c07dca60dd1e4de000da97e7bc4e3f))
+- In older Chromes (< 117), prerendering is disabled when Chrome uses over 10% of the total RAM available of the device ([source](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.cc;l=1107;drc=61bc5ca953c07dca60dd1e4de000da97e7bc4e3f))
+- PrerenderV2 is possibly [disabled](https://source.chromium.org/chromium/chromium/src/+/main:content/browser/preloading/prerender/prerender_host_registry.cc;l=44;drc=61bc5ca953c07dca60dd1e4de000da97e7bc4e3f;bpv=1;bpt=1) on Android devices with less than 1.7 GB of memory
 
 ## Preload Limitations
 
