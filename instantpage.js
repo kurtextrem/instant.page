@@ -113,11 +113,10 @@
 			const intersectionObserver = new IntersectionObserver(
 				entries => {
 					for (let i = 0; i < entries.length; ++i) {
-						const entry = entries[i]
-						const linkElement = entry.target
-
 						if (len > PREFETCH_LIMIT) return
 
+						const entry = entries[i]
+						const linkElement = entry.target
 						if (entry.isIntersecting) {
 							// Adding href to array of hrefsInViewport
 							hrefsInViewport.add(linkElement.href)
@@ -131,7 +130,7 @@
 								preload(linkElement.href, false, true)
 							}, SCROLL_DELAY)
 						} else {
-							hrefsInViewport.delete(index)
+							hrefsInViewport.delete(linkElement.href)
 						}
 					}
 				},
