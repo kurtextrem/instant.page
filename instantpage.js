@@ -96,7 +96,7 @@
 	if (useViewport && window.IntersectionObserver && 'isIntersecting' in IntersectionObserverEntry.prototype) {
 		// https://verlok.github.io/quicklink-optimal-options/
 		const PREFETCH_LIMIT = !has3G ? (allowExternalLinks ? +dataset.instantLimit : 1 / 0) : 1 // Infinity
-		const SCROLL_DELAY = 'instantScrollDelay' in dataset ? +dataset.instantScrollDelay : 500
+		const SCROLL_DELAY = 'instantScrollDelay' in dataset ? +dataset.instantScrollDelay : 1000
 		const THRESHOLD = 'instantThreshold' in dataset ? +dataset.instantThreshold : 0.9
 		const SELECTOR = 'instantSelector' in dataset ? dataset.instantSelector : 'a'
 
@@ -130,6 +130,7 @@
 								preload(linkElement.href, false, true)
 							}, SCROLL_DELAY)
 						} else {
+							--len
 							hrefsInViewport.delete(linkElement.href)
 						}
 					}
