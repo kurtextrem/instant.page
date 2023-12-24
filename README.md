@@ -27,6 +27,8 @@ When using this fork, you need to be careful since PrerenderV2 uses a `<script>`
 
 ## What is unsafe to be prefetched/preloaded/prerendered?
 
+In general, you should avoid prefetching/preloading/prerendering for SEO bots, see [this](https://merj.com/blog/managing-webpages-resources-for-efficient-crawling-and-rendering#:~:text=NextJS%E2%80%99s%20Approach%20To%20Avoiding%20Prefetching%20Links) analysis and the [NextJS PR](https://github.com/vercel/next.js/pull/40435/files).
+
 See [this](https://docs.google.com/document/d/1_9XkDUKMGf2f3tDt1gvQQjfliNLpGyFf36BB1-NUZ98/edit) and [this](https://addyosmani.com/blog/what-not-to-prefetch-prerender/) document for helpful tips on what not to prefetch and prerender. You should exclude:
 - Logout URLs
 - "Switch language" URLs
@@ -37,6 +39,8 @@ See [this](https://docs.google.com/document/d/1_9XkDUKMGf2f3tDt1gvQQjfliNLpGyFf3
 - Large resources (e.g. zip files, mp4, ...)
 
 ⚠️ Chromium currently ignores HTTP `cache-control` (including `no-store`) header for prefetch/prerender and generally caches prefetched pages for ~5 minutes. This might change in the [future](https://chromestatus.com/feature/5087526916718592).
+
+Maybe interesting: [Recently-Logged-In](https://calendar.perfplanet.com/2023/rli/) technique.
 
 ### Fixing on the client
 
