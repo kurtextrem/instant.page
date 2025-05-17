@@ -64,6 +64,8 @@ In older Chromes (< 116), prefetch and prerender did not use the same in-flight 
 
 Navigational requests will re-use the in-flight request or [request the remaining bytes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Link_prefetching_FAQ#what_happens_if_i_click_on_a_link_while_something_is_being_prefetched) of a request.
 
+In old Chromium versions, prefetches may be stored for [5 min unconditionally](https://issues.chromium.org/issues/40232065).
+
 ## Prerender Limitations
 
 - Prerender/prefetch is disabled if the user has OS-level data-saver or battery-saver turned on, or if the user has "preload pages" turned off in chrome://settings
